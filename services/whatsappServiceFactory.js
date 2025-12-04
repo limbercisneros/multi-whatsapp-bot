@@ -6,7 +6,7 @@ module.exports = (token, phoneId) => {
   return {
     sendText: async (to, body) => {
       try {
-        await axios.post(baseUrl, {
+        const response = await axios.post(baseUrl, {
           messaging_product: 'whatsapp',
           to,
           type: 'text',
@@ -14,18 +14,30 @@ module.exports = (token, phoneId) => {
         }, {
           headers: { Authorization: `Bearer ${token}` }
         });
+        console.log('[WhatsApp] ✅ Mensaje enviado a', to, 'ID:', response.data.messages?.[0]?.id);
+        return response.data;
       } catch (err) {
-        console.error('Error sendText:', err.response?.data || err.message);
+        console.error('[WhatsApp] ❌ Error sendText:', err.response?.data || err.message);
+        if (err.response?.data) {
+          console.error('[WhatsApp] Detalles:', JSON.stringify(err.response.data, null, 2));
+        }
+        throw err;
       }
     },
 
     sendTemplate: async (to, template) => {
       try {
-        await axios.post(baseUrl, template, {
+        const response = await axios.post(baseUrl, template, {
           headers: { Authorization: `Bearer ${token}` }
         });
+        console.log('[WhatsApp] ✅ Template enviado a', to, 'ID:', response.data.messages?.[0]?.id);
+        return response.data;
       } catch (err) {
-        console.error('Error sendTemplate:', err.response?.data || err.message);
+        console.error('[WhatsApp] ❌ Error sendTemplate:', err.response?.data || err.message);
+        if (err.response?.data) {
+          console.error('[WhatsApp] Detalles:', JSON.stringify(err.response.data, null, 2));
+        }
+        throw err;
       }
     }
   };

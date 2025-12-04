@@ -7,9 +7,16 @@ exports.verifyWebhook = (req, res) => {
   const token = req.query['hub.verify_token'];
   const challenge = req.query['hub.challenge'];
 
+  console.log('[Webhook] Verificación recibida:', { mode, token: token ? '***' : 'missing', challenge: challenge ? 'present' : 'missing' });
+
   if (mode === 'subscribe') {
     const bot = getBotByVerifyToken(token);
-    if (bot) return res.status(200).send(challenge);
+    if (bot) {
+      console.log('[Webhook] ✅ Verificación exitosa para bot:', bot.config.name);
+      return res.status(200).send(challenge);
+    } else {
+      console.log('[Webhook] ❌ Token no encontrado:', token);
+    }
   }
 
   return res.sendStatus(403);
@@ -20,7 +27,10 @@ exports.receiveMessage = async (req, res) => {
     const body = req.body;
 
     // Validamos estructura básica
-    if (!body.entry) return res.sendStatus(400);
+    if (!body.entry) {
+      console.log('[Webhook] ❌ Request sin entry');
+      return res.sendStatus(400);
+    }
 
     // Puede venir con múltiples entradas: iterar
     for (const entry of body.entry) {
@@ -32,15 +42,30 @@ exports.receiveMessage = async (req, res) => {
         // Intentamos determinar el bot: preferimos phone_number_id -> buscar bot por phone_id
         const phoneId = value?.metadata?.phone_number_id || metadata.phone_number_id || metadata.display_phone_number;
         let bot = null;
-        if (phoneId) bot = getBotByPhoneId(String(phoneId));
-
-        // Si no encontramos por phoneId, intentamos por mapping en la metadata (fallback)
-        if (!bot) {
-          // En este diseño asumimos que el webhook verification usa verify_token; el POST no lo manda, así que es mejor mapear por phone_id.
+        if (phoneId) {
+          bot = getBotByPhoneId(String(phoneId));
+          if (bot) {
+            console.log('[Webhook] ✅ Bot encontrado por phone_id:', phoneId, '->', bot.config.name);
+          } else {
+            console.log('[Webhook] ⚠️  Bot NO encontrado para phone_id:', phoneId);
+          }
+        } else {
+          console.log('[Webhook] ⚠️  No se encontró phone_id en el payload');
         }
 
         const messages = value?.messages || [];
+        if (messages.length === 0) {
+          console.log('[Webhook] ℹ️  No hay mensajes en este cambio (puede ser status update)');
+          continue;
+        }
+
         for (const message of messages) {
+          console.log('[Webhook] 📨 Mensaje recibido:', {
+            from: message.from,
+            type: message.type,
+            text: message.text?.body?.substring(0, 50) || 'N/A',
+            bot: bot ? bot.config.name : 'NO ENCONTRADO'
+          });
           // Cada message tiene 'from', 'text', 'type', etc.
           await routeMessage(bot, message);
         }
@@ -49,7 +74,7 @@ exports.receiveMessage = async (req, res) => {
 
     return res.sendStatus(200);
   } catch (err) {
-    console.error('Error receiveMessage:', err);
+    console.error('[Webhook] ❌ Error receiveMessage:', err);
     return res.sendStatus(500);
   }
 };

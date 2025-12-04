@@ -6,11 +6,17 @@ const whatsappServiceFactory = require('./whatsappServiceFactory');
 async function routeMessage(botRecord, message) {
   try {
     if (!botRecord) {
-      console.warn('Bot no encontrado para mensaje from=', message.from);
+      console.warn('[Router] ⚠️  Bot no encontrado para mensaje from=', message.from);
       return;
     }
 
     const { config, logic } = botRecord;
+
+    // Validar que tenga token y phone_id
+    if (!config.token || !config.phone_id) {
+      console.error('[Router] ❌ Bot', config.name, 'no tiene token o phone_id configurado');
+      return;
+    }
 
     // Crea servicio para enviar mensajes usando token y phoneId del bot
     const whatsappService = whatsappServiceFactory(config.token, config.phone_id);
@@ -25,10 +31,13 @@ async function routeMessage(botRecord, message) {
       raw: message
     };
 
+    console.log('[Router] 🔄 Ejecutando lógica del bot:', config.name);
     // Ejecutar la lógica del bot (module.exports = async (message, whatsappService, config) => { ... })
     await logic(payload, whatsappService, config);
+    console.log('[Router] ✅ Lógica ejecutada exitosamente para:', config.name);
   } catch (err) {
-    console.error('Error en routeMessage:', err);
+    console.error('[Router] ❌ Error en routeMessage:', err);
+    console.error('[Router] Stack:', err.stack);
   }
 }
 
