@@ -1,0 +1,16 @@
+node_modules/
+.env
+.env.local
+.DS_Store
+*.log
+logs/
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Archivos de configuración con tokens (no subir a Git)
+bots/*/config.json
+!bots/example-bot/config.json
+

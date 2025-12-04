@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: multi-whatsapp-bot
+    env: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3000
+      - key: GLOBAL_VERIFY_SALT
+        generateValue: true
+    healthCheckPath: /health
+

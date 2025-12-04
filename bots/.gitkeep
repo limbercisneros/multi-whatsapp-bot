@@ -1,0 +1,4 @@
+# Esta carpeta contiene los bots de cada cliente
+# Los archivos config.json con tokens reales NO se suben a Git
+# Solo se incluye example-bot como referencia
+
